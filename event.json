@@ -11,7 +11,7 @@
     },
     "outputDialogMode": "Text",
     "currentIntent": {
-        "name": "Greeting",
+        "name": "LogIntent",
         "slots": {},
         "slotDetails": {},
         "confirmationStatus": "None"

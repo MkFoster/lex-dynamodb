@@ -29,7 +29,7 @@ exports.handler = (event, context, callback) => {
         // Dispatch to your skill's intent handlers
         if (intentName === 'Greeting') {
             return greeting(event, callback);
-        } else if (intentName === 'LogThisIntent') {
+        } else if (intentName === 'LogIntent') {
             return logIntent(event, callback);
         }
         throw new Error(`Intent with name ${intentName} not supported`);
