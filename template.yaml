@@ -12,79 +12,74 @@ Globals:
 
 Parameters:
   TableName:
-    AllowedPattern: ^[A-Za-z_]+$
-    ConstraintDescription: Required. Can be characters and underscore only. No numbers or special characters allowed.
-    Description: (Required) The name of the new DynamoDB table you want to create and save to. Minimum 3 characters
-    MaxLength: 50
-    Default: LexActivity
-    MinLength: 3
     Type: String
+    Default: 'LexLog'
+    Description: (Required) The name of the new DynamoDB table you want to create and save to. Minimum 3 characters
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
 
 Resources:
-  LogIntentFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: log-intent
-      Description: Log Lex intent to a DynamoDB table
-      CodeUri: log-intent/
-      Handler: index.handler
-      Runtime: nodejs8.10
-      Policies:
-        - Statement:
-          - Action:
-            - cloudwatch:PutMetricData
-            Resource: '*'
-            Effect: Allow
-        - Statement:
-          - Action:
-            - dynamodb:GetItem
-            - dynamodb:DeleteItem
-            - dynamodb:PutItem
-            - dynamodb:Scan
-            - dynamodb:Query
-            - dynamodb:UpdateItem
-            - dynamodb:BatchWriteItem
-            - dynamodb:BatchGetItem
-            Resource:
-              Fn::Sub:
-              - arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${tableName}
-              - tableName:
-                Ref: TableName
-            Effect: Allow
-          MemorySize: 128
-          Environment:
-              Variables:
-                  TABLE_NAME:
-                      Ref: TableName
-                  PRIMARY_KEY:
-                      Fn::Sub: ${TableName}Id
+  ### Roles
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
-        KeySchema:
-        - KeyType: HASH
-        AttributeName:
-            Fn::Sub: ${TableName}Id
-        TableName:
-            Ref: TableName
-        AttributeDefinitions:
-        - AttributeName:
-            Fn::Sub: ${TableName}Id
-            AttributeType: S
-        ProvisionedThroughput:
-            WriteCapacityUnits: 1
-            ReadCapacityUnits: 1
+      KeySchema:
+      - KeyType: HASH
+        AttributeName: !Sub "${TableName}Id"
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TableName: !Ref TableName
+      AttributeDefinitions:
+      - AttributeName: !Sub "${TableName}Id"
+        AttributeType: S
+      ProvisionedThroughput:
+        WriteCapacityUnits: 1
+        ReadCapacityUnits: 1
+  LogIntentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: logIntent
+      Description: Log Lex intent to a DynamoDB table
+      CodeUri: s3://mk-sam-packages/log-intent.zip
+      Handler: index.handler
+      Runtime: nodejs8.10
+      Policies:
+      - Statement:
+        - Action:
+          - cloudwatch:PutMetricData
+          Resource: '*'
+          Effect: Allow
+      - Statement:
+        - Action:
+          - dynamodb:GetItem
+          - dynamodb:DeleteItem
+          - dynamodb:PutItem
+          - dynamodb:Scan
+          - dynamodb:Query
+          - dynamodb:UpdateItem
+          - dynamodb:BatchWriteItem
+          - dynamodb:BatchGetItem
+          Resource:
+            Fn::Sub:
+            - arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
+            - tableName: !Ref DynamoDBTable
+          Effect: Allow
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          PRIMARY_KEY: !Sub ${TableName}Id
 
 Outputs:
-    log-intent:
+    LogIntentFunctionArn:
       Description: "Lambda function that takes Lex fulfillment requests and logs them to DynamoDB"
-      Value: 
-        Fn::GetAtt:
-        - log-intent.Arn
+      Value: !GetAtt
+        - LogIntentFunction
+        - Arn
 
     DynamoDBTableArn:
-    Description: The ARN of your DynamoDB Table
-    Value:
-      Fn::GetAtt:
-      - DynamoDBTable
-      - Arn
+      Description: The ARN of your DynamoDB Table
+      Value: !GetAtt
+        - DynamoDBTable
+        - Arn
