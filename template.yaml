@@ -46,26 +46,8 @@ Resources:
       Handler: index.handler
       Runtime: nodejs8.10
       Policies:
-      - Statement:
-        - Action:
-          - cloudwatch:PutMetricData
-          Resource: '*'
-          Effect: Allow
-      - Statement:
-        - Action:
-          - dynamodb:GetItem
-          - dynamodb:DeleteItem
-          - dynamodb:PutItem
-          - dynamodb:Scan
-          - dynamodb:Query
-          - dynamodb:UpdateItem
-          - dynamodb:BatchWriteItem
-          - dynamodb:BatchGetItem
-          Resource:
-            Fn::Sub:
-            - arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
-            - tableName: !Ref DynamoDBTable
-          Effect: Allow
+      - DynamoDBCrudPolicy:
+        TableName: !Ref DynamoDBTable
       Environment:
         Variables:
           TABLE_NAME: !Ref TableName
